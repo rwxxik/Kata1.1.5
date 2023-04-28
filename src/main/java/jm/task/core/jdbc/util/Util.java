@@ -7,7 +7,6 @@ import org.hibernate.cfg.Configuration;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 public class Util {
     private static final String DB_URL = "jdbc:mysql://localhost:3306/myDbTest";
@@ -15,8 +14,7 @@ public class Util {
     private static final String DB_PASSWORD = "root";
     private static Connection connection;
 
-    private static final Configuration configuration = new Configuration().addAnnotatedClass(User.class);
-    private static final SessionFactory sessionFactory = configuration.buildSessionFactory();
+    private static SessionFactory sessionFactory;
 
     public static Connection getConnection() {
         try {
@@ -37,7 +35,15 @@ public class Util {
         }
     }
 
-    public static SessionFactory getFactory() {
+    public static SessionFactory getSessionFactory() {
+        if (sessionFactory == null) {
+            try {
+                Configuration config = new Configuration().addAnnotatedClass(User.class);
+                sessionFactory = config.buildSessionFactory();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
         return sessionFactory;
     }
 

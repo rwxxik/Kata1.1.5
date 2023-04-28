@@ -4,8 +4,6 @@ import jm.task.core.jdbc.model.User;
 import jm.task.core.jdbc.util.Util;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import org.hibernate.query.NativeQuery;
-import org.hibernate.query.Query;
 
 import java.util.List;
 
@@ -17,57 +15,55 @@ public class UserDaoHibernateImpl implements UserDao {
 
     @Override
     public void createUsersTable() {
-        try (Session session = Util.getFactory().openSession()) {
+        try (Session session = Util.getSessionFactory().openSession()) {
             session.beginTransaction();
-            NativeQuery query = session.createNativeQuery("CREATE TABLE IF NOT EXISTS myDbTest.users (" +
+            session.createSQLQuery("CREATE TABLE IF NOT EXISTS myDbTest.users (" +
                     "id BIGINT NOT NULL AUTO_INCREMENT, " +
                     "name VARCHAR(45) NULL, " +
                     "lastName VARCHAR(45) NULL, " +
                     "age TINYINT NULL, " +
-                    "UNIQUE INDEX id_UNIQUE (id ASC));");
-            query.executeUpdate();
+                    "UNIQUE INDEX id_UNIQUE (id ASC));").executeUpdate();
             session.getTransaction().commit();
             System.out.println("----Таблица создана/уже имеется в базе данных----");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     @Override
     public void dropUsersTable() {
-        try (Session session = Util.getFactory().openSession()) {
+        try (Session session = Util.getSessionFactory().openSession()) {
             session.beginTransaction();
-            NativeQuery query = session.createNativeQuery("DROP TABLE IF EXISTS users");
-            query.executeUpdate();
+            session.createSQLQuery("DROP TABLE IF EXISTS users").executeUpdate();
             session.getTransaction().commit();
             System.out.println("----Таблица удалена из базы данных----");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     @Override
     public void saveUser(String name, String lastName, byte age) {
-        User user = new User(name, lastName, age);
-        Session session = Util.getFactory().openSession();
-        session.beginTransaction();
-        try {
-            session.persist(user);
-            session.getTransaction().commit();
+        Transaction tx = null;
+        try (Session session = Util.getSessionFactory().openSession()){
+            tx = session.beginTransaction();
+            session.persist(new User(name, lastName, age));
+            tx.commit();
             System.out.printf("----Пользователь с именем %s добавлен в таблицу----\n", name);
         } catch (Exception e) {
-            session.getTransaction().rollback();
+            if (tx != null) {
+                tx.rollback();
+            }
             System.out.printf("----Прозошла ошибка при добавлении пользователя с именем %s\n" +
                     "Пользователь не был добавлен в таблицу!----\n", name);
-
-        } finally {
-            session.close();
         }
 
     }
 
     @Override
     public void removeUserById(long id) {
-        Session session = Util.getFactory().openSession();
         Transaction tx = null;
-
-        try {
+        try (Session session = Util.getSessionFactory().openSession()){
             tx = session.beginTransaction();
             User user = session.get(User.class, id);
             if (user != null) {
@@ -80,29 +76,31 @@ public class UserDaoHibernateImpl implements UserDao {
         } catch (Exception e) {
             if (tx != null) {
                 tx.rollback();
-                System.out.printf("----Произошла ошибка при удалении пользователя!\n" +
-                        "Пользователь с id '%s' не был удален!----\n", id);
             }
-        } finally {
-            session.close();
+            System.out.printf("----Произошла ошибка при удалении пользователя!\n" +
+                    "Пользователь с id '%s' не был удален!----\n", id);
         }
     }
 
     @Override
     public List<User> getAllUsers() {
-        try (Session session = Util.getFactory().openSession()) {
+        try (Session session = Util.getSessionFactory().openSession()) {
             return session.createQuery("from User", User.class).list();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
     @Override
     public void cleanUsersTable() {
-        try (Session session = Util.getFactory().openSession()) {
+        try (Session session = Util.getSessionFactory().openSession()) {
             session.beginTransaction();
-            NativeQuery query = session.createNativeQuery("DELETE FROM users");
-            query.executeUpdate();
+            session.createQuery("DELETE FROM User").executeUpdate();
             session.getTransaction().commit();
             System.out.println("----Таблица users очищена----");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
