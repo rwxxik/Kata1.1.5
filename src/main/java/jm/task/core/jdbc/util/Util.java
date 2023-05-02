@@ -35,16 +35,8 @@ public class Util {
         }
     }
 
-    public static SessionFactory getSessionFactory() {
-        if (sessionFactory == null) {
-            try {
-                Configuration config = new Configuration().addAnnotatedClass(User.class);
-                sessionFactory = config.buildSessionFactory();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        return sessionFactory;
+    public static Configuration getConfiguration() {
+                return new Configuration().addAnnotatedClass(User.class);
     }
 
     public static void closeSessionFactory() {
